@@ -1,6 +1,8 @@
 import {Routes,Route} from 'react-router-dom'
-import AudioCall from './page/VideoCall';
+import VideoCall from './page/VideoCall';
+import AudionCall from './page/AudioCall';
 import AudioMuisc from './page/AudioMuisc';
+
 function App() {
   return (
    <>
@@ -9,7 +11,8 @@ function App() {
       <h1 className=' text-red-400'>React</h1>
     </div>
      <Routes>
-       <Route path='/audio/call' element={<AudioCall/>}/>
+       <Route path='/video/call' element={<VideoCall/>}/>
+       <Route path='/audio/call' element={<AudionCall/>}/>
        <Route path='/audio/muisc' element={<AudioMuisc/>}/>
      </Routes>
    </div>

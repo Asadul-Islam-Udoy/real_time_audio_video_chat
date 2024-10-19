@@ -30,9 +30,8 @@ io.on("connection", (socket) => {
   });
   // Handle call ending
   socket.on("endCall", (roomId) => {
-    console.log('sii',roomId)
     // Notify all users in the room that the call has ended
-    io.to(roomId.otherUserId).emit("callEnded");
+    io.to(roomId).emit("callEnded");
   });
 
   socket.on("disconnect", () => {

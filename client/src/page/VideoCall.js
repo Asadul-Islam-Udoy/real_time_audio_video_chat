@@ -6,10 +6,11 @@ const socket = io("http://localhost:5000");
 // socket.on("connect", () => {
 //   setMyId(socket.id);
 // });
-const AudioCall = () => {
-  const audioRef = useRef(null);
+const VideoCall = () => {
+  const audioRefSender = useRef(null);
+  const [audioRefReciver] = useState(new Audio('../muisc/lirivial-instrumental-173944.mp3'));
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isCalling, setIsCalling] = useState(false);
+  const [isCancelReciver, setIsCancelReviver] = useState(false);
   const [otherUserId, setOtherUserId] = useState();
   const [myId, setMyId] = useState("");
   const [stream, setStream] = useState(null);
@@ -17,6 +18,7 @@ const AudioCall = () => {
   const [callAccepted, setCallAccepted] = useState(false);
   const [incomingCall, setIncomingCall] = useState(false);
   const [callerSignal, setCallerSignal] = useState(null);
+  const [intervalId, setIntervalId] = useState(null);
   const navigate = useNavigate();
   const myVideo = useRef(null);
   const userVideo = useRef(null);
@@ -28,7 +30,9 @@ const AudioCall = () => {
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         setStream(stream);
-        myVideo.current.srcObject = stream;
+        if (stream) {
+          myVideo.current.srcObject = stream;
+        }
       });
     socket.on("connect", () => {
       setMyId(socket.id);
@@ -43,7 +47,7 @@ const AudioCall = () => {
       setIsPlaying(false);
       setCallAccepted(true);
     });
-  }, [socket]);
+  }, [socket, isPlaying, callAccepted]);
 
   const callUser = (id) => {
     setIsPlaying(true);
@@ -66,9 +70,17 @@ const AudioCall = () => {
         peer.signal(signal);
       });
     }
+    if(!intervalId){
+      const audio = audioRefSender.current;
+      const id = setInterval(() => {
+        audio.play()
+      }, 4000);
+      setIntervalId(id)
+    }
   };
 
   const answerCall = () => {
+    setIsCancelReviver(true)
     setIncomingCall(false);
     if (stream) {
       const peer = new Peer({
@@ -98,8 +110,11 @@ const AudioCall = () => {
       socket.off("callEnded"); // Clean up socket listeners when component unmounts
     };
   }, []);
-
   const leaveCall = () => {
+    if(intervalId){
+      clearInterval(intervalId);
+      setIntervalId(null)
+    }
     setCallAccepted(false);
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
@@ -110,7 +125,7 @@ const AudioCall = () => {
       setCurrentionRef(null);
     }
     // Optionally, inform the server that the call has ended
-    socket.emit("endCall", { otherUserId });
+    socket.emit("endCall", otherUserId );
     // Reset video elements
     if (myVideo.current) {
       myVideo.current.srcObject = null; // Only set if current is not null
@@ -124,29 +139,60 @@ const AudioCall = () => {
     navigate("/");
     window.location.reload();
   };
-  const [u,setU] = useState(0)
-  const AudioMethod=()=>{
-    setU((pre)=>pre+1)
-  }
 
+
+  const leaveCallReciver = () => {
+    if(intervalId){
+      clearInterval(intervalId);
+      setIntervalId(null)
+    }
+    setCallAccepted(false);
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    // Close the peer connection
+    if (connectionRef) {
+      connectionRef.destroy();
+      setCurrentionRef(null);
+    }
+    // Optionally, inform the server that the call has ended
+     socket.emit("endCall",caller);
+    // Reset video elements
+    if (myVideo.current) {
+      myVideo.current.srcObject = null; // Only set if current is not null
+    }
+    if (userVideo.current) {
+      userVideo.current.srcObject = null;
+    } // Only set if current is not null
+
+    setStream(null); // Reset stream state
+    setOtherUserId("");
+    navigate("/");
+    window.location.reload();
+  };
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!callAccepted && isPlaying) {
-       const intervalId = setInterval(() => {
-        console.log('callAccepted',callAccepted,'isplaying',isPlaying)
-        audio.play();
-        if(callAccepted && !isPlaying){
-            clearInterval(intervalId);
-            console.log("Interval 1 stopped");
-        }
-      }, 3000);
-    }
-    console.log('callAccout',callAccepted,'isplayingout',isPlaying)
     if (callAccepted) {
       setIsPlaying(false);
     }
-  }, [callAccepted,isPlaying]);
+  }, [callAccepted]);
+
+  useEffect(() => {
+    return () => {
+      if(!callAccepted && isPlaying){
+        clearInterval(intervalId); 
+      }
+    };
+  }, [intervalId ,isPlaying ,callAccepted ,incomingCall]);
+
+  useEffect(()=>{
+    if(incomingCall && !callAccepted){
+      audioRefReciver.play()
+     }
+     else{
+      audioRefReciver.pause();
+     }
+  },[incomingCall,callAccepted])
 
   return (
     <div>
@@ -174,14 +220,19 @@ const AudioCall = () => {
         {incomingCall && !callAccepted ? (
           <div>
             <h2>Incoming Call...</h2>
-            <button onClick={answerCall}>Answer</button>
-            <button onClick={leaveCall}>Decline</button>
+            <button className="bg-blue-400 p-2 ml-8 rounded-sm text-white font-serif" onClick={answerCall}>Answer</button>
+            <button className="m-3 bg-red-400 p-2 ml-8 rounded-sm text-white font-serif" onClick={leaveCallReciver}>Decline</button>
           </div>
         ) : null}
+        {isPlaying &&  <div>calling...</div>} 
         {!incomingCall && !callAccepted ? (
           <>
-            <button onClick={() => callUser(otherUserId)}>Call User</button>
-            <audio ref={audioRef}>
+            {!isCancelReciver && <button className="bg-blue-500 p-2 ml-8 rounded-sm text-white font-serif" onClick={() => callUser(otherUserId)}>Call User</button>}
+            {isPlaying && <button className="bg-red-400  p-2 ml-8 rounded-sm text-white font-serif" onClick={leaveCall}>Cancel...</button>}
+            {isCancelReciver  && 
+              <button className="bg-red-400  p-2 ml-8 rounded-sm text-white font-serif" onClick={leaveCallReciver}>End Call</button>
+            }
+            <audio ref={audioRefSender}>
               <source
                 src="../muisc/phone-call-14472 (1).mp3"
                 type="audio/mpeg"
@@ -189,27 +240,11 @@ const AudioCall = () => {
             </audio>
           </>
         ) : null}
-        {callAccepted && <button onClick={leaveCall}>End Call</button>}
+        {callAccepted && <button className="bg-red-500 p-2 ml-8 rounded-sm text-white font-serif" onClick={leaveCall}>End Call</button>}
       </div>
     </div>
   );
 };
 
-export default AudioCall;
-// {
-//   /* <h1>Real-Time Voice Call</h1>
-// <p>Your ID: {myId}</p>
+export default VideoCall;
 
-// <input
-//   type="text"
-//   placeholder="Enter User ID to call"
-//   value={otherUserId}
-//   onChange={(e) => setOtherUserId(e.target.value)}
-// /> */
-// }
-// {
-//   /* <audio ref={audioRef}>
-// {/* <source src="../muisc/phone-call-14472 (1).mp3" type="audio/mpeg" />
-// Your browser does not support the audio element.
-// </audio> */
-// } */}
