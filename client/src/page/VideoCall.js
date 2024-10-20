@@ -3,9 +3,6 @@ import io from "socket.io-client";
 import Peer from "simple-peer";
 import { useNavigate } from "react-router-dom";
 const socket = io("http://localhost:5000");
-// socket.on("connect", () => {
-//   setMyId(socket.id);
-// });
 const VideoCall = () => {
   const audioRefSender = useRef(null);
   const [audioRefReciver] = useState(new Audio('../muisc/lirivial-instrumental-173944.mp3'));
@@ -31,7 +28,9 @@ const VideoCall = () => {
       .then((stream) => {
         setStream(stream);
         if (stream) {
-          myVideo.current.srcObject = stream;
+          if(myVideo.current){
+            myVideo.current.srcObject = stream;
+          }
         }
       });
     socket.on("connect", () => {
@@ -74,7 +73,7 @@ const VideoCall = () => {
       const audio = audioRefSender.current;
       const id = setInterval(() => {
         audio.play()
-      }, 4000);
+      }, 3000);
       setIntervalId(id)
     }
   };
@@ -183,7 +182,7 @@ const VideoCall = () => {
         clearInterval(intervalId); 
       }
     };
-  }, [intervalId ,isPlaying ,callAccepted ,incomingCall]);
+  }, [intervalId ,isPlaying ,callAccepted]);
 
   useEffect(()=>{
     if(incomingCall && !callAccepted){

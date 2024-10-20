@@ -18,9 +18,17 @@ app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
-io.on("connection", (socket) => {
+  io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+  ///audio call
+  socket.on('audioCallUser',(data)=>{
+   io.to(data.callReciverId).emit('audioCallUser',{signal:data.userSignal,YourId:socket.id})
+  })
 
+  socket.on('audioCallAnwser',(data)=>{
+     io.to(data.callSenderId).emit('AudioCallAccepted',data.userSignal)
+  })
+  ///video call
   socket.on("callUser", ({ userToCall, signalData }) => {
     io.to(userToCall).emit("callUser", { signal: signalData, from: socket.id });
   });
