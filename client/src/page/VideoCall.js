@@ -109,6 +109,8 @@ const VideoCall = () => {
       socket.off("callEnded"); // Clean up socket listeners when component unmounts
     };
   }, []);
+
+  
   const leaveCall = () => {
     if(intervalId){
       clearInterval(intervalId);
@@ -141,6 +143,7 @@ const VideoCall = () => {
 
 
   const leaveCallReciver = () => {
+    setIncomingCall(false);
     if(intervalId){
       clearInterval(intervalId);
       setIntervalId(null)

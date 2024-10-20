@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import Peer from "simple-peer";
+import { useNavigate } from "react-router-dom";
 const socket = io("http://localhost:5000");
 function AudionCall() {
   const senderRingtonRef = useRef(null);
+  const navigate = useNavigate();
   const [reciverRingtonRef] = useState(
     new Audio("../muisc/lirivial-instrumental-173944.mp3")
   );
@@ -94,6 +96,77 @@ function AudionCall() {
   };
 
   useEffect(() => {
+    socket.on("callEnded", () => {
+      leveToSenderHandler();
+    });
+    return () => {
+      socket.off("callEnded");
+    };
+  }, []);
+
+  ///leve to sender
+  const leveToSenderHandler = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+    setCallAccepted(false);
+    setIncomingCall(false);
+    if (peerStream) {
+      peerStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+    }
+    if (peerConnection) {
+      peerConnection.destroy();
+      setPeerConnection(null);
+    }
+    socket.emit("endCall", otherUserId);
+
+    if (senderAudioRef.current) {
+      senderAudioRef.current.srcObject = null; // Only set if current is not null
+    }
+    if (reciverAudioRef.current) {
+      reciverAudioRef.current.srcObject = null;
+    } //
+    setPeerStreem(null);
+    setOtherUserId("");
+    navigate("/");
+    window.location.reload();
+  };
+
+  ///leve to sender
+  const leveToReceverHandler = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+    setCallAccepted(false);
+    setIncomingCall(false);
+    if (peerStream) {
+      peerStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+    }
+    if (peerConnection) {
+      peerConnection.destroy();
+      setPeerConnection(null);
+    }
+    socket.emit("endCall", caller);
+
+    if (senderAudioRef.current) {
+      senderAudioRef.current.srcObject = null; // Only set if current is not null
+    }
+    if (reciverAudioRef.current) {
+      reciverAudioRef.current.srcObject = null;
+    } //
+    setPeerStreem(null);
+    setOtherUserId("");
+    navigate("/");
+    window.location.reload();
+  };
+
+  useEffect(() => {
     return () => {
       if (isPlaying && !callAccepted) {
         clearInterval(intervalId);
@@ -129,7 +202,10 @@ function AudionCall() {
             >
               Answer
             </button>
-            <button className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif">
+            <button
+              onClick={leveToReceverHandler}
+              className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif"
+            >
               Cancel
             </button>
           </div>
@@ -137,20 +213,27 @@ function AudionCall() {
           <div>
             {isPlaying ? (
               <div className="m-3">
-                <p className="ml-2">running....</p>
-                <button className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif">
+                {!callAccepted ? <p className="ml-2">running....</p>:<p className="ml-2">acceped call..</p>}
+                <button
+                  onClick={leveToSenderHandler}
+                  className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif"
+                >
                   Cancel
                 </button>
               </div>
             ) : (
               <div>
                 {callAccepted ? (
-                  <button
-                    onClick={() => callUserHandler(otherUserId)}
-                    className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif"
-                  >
-                    Cancel
-                  </button>
+                  <div>
+                    {" "}
+                    <p className="ml-2">acceped call....</p>
+                    <button
+                      onClick={() => callUserHandler(otherUserId)}
+                      className=" bg-orange-500 p-1 m-2 rounded-sm text-white font-serif"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => callUserHandler(otherUserId)}

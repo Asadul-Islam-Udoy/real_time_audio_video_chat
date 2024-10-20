@@ -38,6 +38,7 @@ app.use(express.static(path.join(__dirname, "public")));
   });
   // Handle call ending
   socket.on("endCall", (roomId) => {
+    console.log('roomss',roomId)
     // Notify all users in the room that the call has ended
     io.to(roomId).emit("callEnded");
   });
