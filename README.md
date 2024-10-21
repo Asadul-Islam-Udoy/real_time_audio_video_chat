@@ -1,36 +1,3 @@
-  <title>Video Call</title>
-///backend
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-io.on('connection', (socket) => {
-    console.log('a user connected');
-
-    socket.on('join', (roomId) => {
-        socket.join(roomId);
-        console.log(`User joined room: ${roomId}`);
-    });
-
-    socket.on('signal', (data) => {
-        io.to(data.roomId).emit('signal', {
-            senderId: socket.id,
-            signal: data.signal,
-        });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
-});
-
-server.listen(3001, () => {
-    console.log('Signaling server is running on http://localhost:3001');
-});
 
 ///fontend
 <!DOCTYPE html>
@@ -119,3 +86,37 @@ server.listen(3001, () => {
     </script>
 </body>
 </html>
+
+
+///backend
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+io.on('connection', (socket) => {
+    console.log('a user connected');
+
+    socket.on('join', (roomId) => {
+        socket.join(roomId);
+        console.log(`User joined room: ${roomId}`);
+    });
+
+    socket.on('signal', (data) => {
+        io.to(data.roomId).emit('signal', {
+            senderId: socket.id,
+            signal: data.signal,
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
+});
+
+server.listen(3001, () => {
+    console.log('Signaling server is running on http://localhost:3001');
+});
